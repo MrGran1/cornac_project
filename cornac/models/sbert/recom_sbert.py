@@ -13,7 +13,9 @@ class SBERT(Recommender):
     def fit(self, train_set,val_set=None):
         """Compute embeddings for all items."""
         Recommender.fit(self, train_set)
-        self.item_texts = [train_set.item_text(i) for i in range(train_set.num_items)]
+        self.item_texts = [train_set.item_text.batch_bow(
+            np.arange(train_set.num_items)
+        ) for i in range(train_set.num_items)]
         
         # Generate embeddings for the items
         self.item_embeddings = self.model.encode(self.item_texts)

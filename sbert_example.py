@@ -4,15 +4,27 @@ import cornac
 from cornac.datasets import citeulike,movielens,amazon_clothing
 from cornac.eval_methods import RatioSplit
 from cornac.models import SBERT
-
-
+from cornac.data import Reader
+from cornac.data import TextModality
+from cornac.data.text import BaseTokenizer
 # Load the MovieLens 100K dataset
-ml_100k = amazon_clothing.load_text()
-# Instantiate an evaluation method.
-ratio_split = RatioSplit(
-    data=ml_100k, test_size=0.2, rating_threshold=4.0, exclude_unknowns=False
-)
+plots, movie_ids = movielens.load_plot()
 
+# movies without plots are filtered out by `cornac.data.Reader`
+ml_100k = movielens.load_feedback(reader=Reader(item_set=movie_ids))
+
+# Instantiate an evaluation method.
+
+item_text_modality = TextModality(corpus=plots, ids=movie_ids, 
+                                  tokenizer=BaseTokenizer(sep='\t', stop_words='english'),
+                                  max_vocab=5000, max_doc_freq=0.5).build()
+
+
+ratio_split = RatioSplit(data=ml_100k, test_size=0.9,
+                         item_text=item_text_modality,
+                         exclude_unknowns=True, 
+                         verbose=True,
+                         seed=123)
 # Instantiate a sbert recommender model.
 sbert = SBERT(k=10)
 
