@@ -16,9 +16,8 @@ ml_100k = movielens.load_feedback(reader=Reader(item_set=movie_ids))
 # Instantiate an evaluation method.
 
 item_text_modality = TextModality(corpus=plots, ids=movie_ids, 
-                                  tokenizer=BaseTokenizer(sep='\t', stop_words='english'),
+                                  tokenizer=BaseTokenizer(sep='\\t', stop_words='english'),
                                   max_vocab=5000, max_doc_freq=0.5).build()
-
 
 ratio_split = RatioSplit(data=ml_100k, test_size=0.9,
                          item_text=item_text_modality,
@@ -38,6 +37,7 @@ pre_20 = cornac.metrics.Precision(k=20)
 cornac.Experiment(
     eval_method=ratio_split,
     models=[sbert],
+    verbose=True,
     metrics=[mae, rmse, rec_20, pre_20],
     user_based=True,
 ).run()

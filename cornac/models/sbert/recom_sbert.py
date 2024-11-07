@@ -10,27 +10,42 @@ class SBERT(Recommender):
         self.k = k  # Number of recommendations to return
         self.model = SentenceTransformer(self.model_name)  # Load SBERT model
 
-    def fit(self, train_set,val_set=None):
-        """Compute embeddings for all items."""
-        Recommender.fit(self, train_set)
-        self.item_texts = [train_set.item_text.batch_bow(
-            np.arange(train_set.num_items)
-        ) for i in range(train_set.num_items)]
-        
-        # Generate embeddings for the items
-        self.item_embeddings = self.model.encode(self.item_texts)
+
+    def fit(self, train_set, val_set=None):
+        """Fit the SBERT model to the dataset."""
+        # Initialize base Recommender
+        Recommender.fit(self, train_set, val_set)
+
+        # Ensure item texts are available in the train set
+        if not hasattr(train_set, 'item_text') or train_set.item_text is None:
+            raise ValueError("train_set must contain item_text with text data for items.")
+
+        # Extract item texts to generate embeddings
+        n_items = train_set.num_items
+        item_texts = train_set.item_text.batch_seq(np.arange(n_items))
+        print(train_set.item_text.batch_seq())
+        # Generate item embeddings using SBERT
+        self.item_embeddings = self.model.encode(item_texts.tolist())
         return self
 
-    def score(self, user_id, item_id=None):
+    def score(self, user_id, item_idx=None):
         """Calculate scores for items based on cosine similarity with the user's preferences."""
-        # Get user feedback (list of items the user interacted with)
-        user_history = self.train_set.user_feedback(user_id)
-        if not user_history:
+        # Get user feedback: two lists (item IDs and ratings)
+        user_history = self.train_set.item_data[user_id]
+        if not user_history or len(user_history[0]) == 0:
             return np.zeros(self.train_set.num_items)
 
+        # Extract item IDs and ratings
+        item_ids, ratings = user_history
+        ratings = np.array(ratings)
+
         # Get embeddings for items the user has interacted with
-        user_embedding = np.mean([self.item_embeddings[item] for item in user_history], axis=0)
-        
-        # Compute similarity between user embedding and item embeddings
+        item_embeddings = np.array([self.item_embeddings[item] for item in item_ids])
+
+        # Calculate weighted user embedding (weighted by ratings)
+        user_embedding = np.average(item_embeddings, axis=0, weights=ratings)
+
+        # Compute similarity between user embedding and all item embeddings
         scores = cosine_similarity([user_embedding], self.item_embeddings)[0]
-        return scores
+        return scores[item_idx]
+
