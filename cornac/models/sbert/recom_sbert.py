@@ -23,7 +23,6 @@ class SBERT(Recommender):
         # Extract item texts to generate embeddings
         n_items = train_set.num_items
         item_texts = train_set.item_text.batch_seq(np.arange(n_items))
-        print(train_set.item_text.batch_seq())
         # Generate item embeddings using SBERT
         self.item_embeddings = self.model.encode(item_texts.tolist())
         return self
@@ -35,14 +34,13 @@ class SBERT(Recommender):
         if not user_history or len(user_history[0]) == 0:
             return np.zeros(self.train_set.num_items)
 
-        # Extract item IDs and ratings
         item_ids, ratings = user_history
         ratings = np.array(ratings)
 
-        # Get embeddings for items the user has interacted with
+        # Get embeddings
         item_embeddings = np.array([self.item_embeddings[item] for item in item_ids])
 
-        # Calculate weighted user embedding (weighted by ratings)
+        # Calculate weighted user embedding
         user_embedding = np.average(item_embeddings, axis=0, weights=ratings)
 
         # Compute similarity between user embedding and all item embeddings

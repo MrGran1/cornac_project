@@ -1,22 +1,19 @@
 """Example to run SBERT model with Ratio Split evaluation strategy"""
 
 import cornac
-from cornac.datasets import citeulike,movielens,amazon_clothing
+from cornac.datasets import citeulike,movielens,amazon_toy
 from cornac.eval_methods import RatioSplit
 from cornac.models import SBERT
 from cornac.data import Reader
 from cornac.data import TextModality
 from cornac.data.text import BaseTokenizer
-# Load the MovieLens 100K dataset
+
 plots, movie_ids = movielens.load_plot()
-
-# movies without plots are filtered out by `cornac.data.Reader`
+#plots, movie_ids = citeulike.load_text()
 ml_100k = movielens.load_feedback(reader=Reader(item_set=movie_ids))
-
-# Instantiate an evaluation method.
-
+#ml_100k = citeulike.load_feedback(reader=Reader(item_set=movie_ids))
 item_text_modality = TextModality(corpus=plots, ids=movie_ids, 
-                                  tokenizer=BaseTokenizer(sep='\\t', stop_words='english'),
+                                  tokenizer=BaseTokenizer(sep=' ', stop_words='english'),
                                   max_vocab=5000, max_doc_freq=0.5).build()
 
 ratio_split = RatioSplit(data=ml_100k, test_size=0.9,
